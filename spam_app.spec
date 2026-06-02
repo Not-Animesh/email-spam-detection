@@ -5,7 +5,7 @@ a = Analysis(
     ['spam_app.py'],
     pathex=[],
     binaries=[],
-    datas=[('spam.csv', '.')],
+    datas=[('dist/spam.csv', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
