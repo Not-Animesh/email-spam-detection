@@ -1,37 +1,51 @@
-print("Program started")
+import argparse
 
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score
+from model_utils import train_model
 
-df = pd.read_csv("spam.csv", encoding='latin-1')
-df = df[['v1', 'v2']]
-df.columns = ['label', 'message']
 
-df['label'] = df['label'].map({'ham': 0, 'spam': 1})
+def classify_message(model, message: str) -> tuple[str, float]:
+    probabilities = model.predict_proba([message])[0]
+    spam_probability = float(probabilities[1])
+    label = "Spam" if spam_probability >= 0.5 else "Not Spam"
+    return label, spam_probability
 
-X_train, X_test, y_train, y_test = train_test_split(
-    df['message'], df['label'], test_size=0.2, random_state=42
-)
 
-vectorizer = CountVectorizer()
-X_train = vectorizer.fit_transform(X_train)
-X_test = vectorizer.transform(X_test)
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Email spam detection CLI")
+    parser.add_argument(
+        "--message",
+        type=str,
+        help="Classify a single message and exit",
+    )
+    args = parser.parse_args()
 
-model = MultinomialNB()
-model.fit(X_train, y_train)
+    model, accuracy = train_model()
+    print(f"Model ready. Validation accuracy: {accuracy:.2%}")
 
-y_pred = model.predict(X_test)
+    if args.message is not None:
+        message = args.message.strip()
+        if not message:
+            print("Please provide a non-empty message.")
+            return
 
-print("Accuracy:", accuracy_score(y_test, y_pred))
+        label, spam_probability = classify_message(model, message)
+        print(f"Prediction: {label} (spam probability: {spam_probability:.2%})")
+        return
 
-msg = [input("Enter your message: ")]
-msg_vec = vectorizer.transform(msg)
-prediction = model.predict(msg_vec)
+    while True:
+        message = input("Enter your message (or 'quit' to exit): ").strip()
 
-if prediction[0] == 1:
-    print("Spam")
-else:
-    print("Not Spam")
+        if message.lower() in {"quit", "exit", "q"}:
+            print("Goodbye!")
+            break
+
+        if not message:
+            print("Please enter a non-empty message.")
+            continue
+
+        label, spam_probability = classify_message(model, message)
+        print(f"Prediction: {label} (spam probability: {spam_probability:.2%})")
+
+
+if __name__ == "__main__":
+    main()
